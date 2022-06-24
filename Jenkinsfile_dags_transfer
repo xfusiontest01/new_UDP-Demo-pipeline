@@ -1,0 +1,23 @@
+node {
+  
+  try{
+      
+      //notify('Started')
+        
+      stage('SCM Checkout') {
+        git branch: 'main', credentialsId: 'xf-pipeline-git-token', url: 'https://github.com/xfusiontest01/UDP-Demo-pipeline.git'
+      }
+
+      stage('Dags Transfer') {
+        sh 'aws s3 sync generatedDAG/ s3://demouser-udp-host-group-airflow/dags/ --delete'
+      }
+
+      stage('Plugins Transfer') {
+        sh 'mkdir -p plugins && cd plugins && aws s3 cp s3://xfusion-airflow-artifacts/airflow-plugins-v1.tar.gz . && tar -xzvf airflow-plugins-v1.tar.gz && rm airflow-plugins-v1.tar.gz && cd .. && aws s3 sync plugins/ s3://demouser-udp-host-group-airflow/plugins/ --delete && rm -rf plugins && sleep 120s'
+      }	
+
+  } catch(err) {
+      notify("Error ${err}")
+      currentBuild.result = 'FAILURE'
+  }
+}
